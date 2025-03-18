@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>FRH PRO formulaire  - v7</title>
+  <title>FRH PRO formulaire  - v10</title>
 
   <!-- (1) Leaflet CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
@@ -843,8 +843,8 @@
     function calculateTotals() {
       let totalEuros = 0, totalKwh = 0;
       for (let i = 0; i < 12; i++) {
-        const eurosVal = document.getElementById(`euros_${index}`);
-        const kwhVal = document.getElementById(`kwh_${index}`);
+        const eurosVal = document.getElementById(`euros_${i}`);
+        const kwhVal = document.getElementById(`kwh_${i}`);
         if (!eurosVal || !kwhVal) continue;
         const eVal = parseFloat(eurosVal.value) || 0;
         const kVal = parseFloat(kwhVal.value) || 0;
@@ -979,7 +979,7 @@
     });
 
     /***************************************************
-     * POST JSON VERS LE WEBHOOK
+     * POST JSON VERS LE WEBHOOK AVEC ENUMÉRATION DES CLÉS
      ***************************************************/
     document.getElementById("postData").addEventListener("click", () => {
       const form = document.getElementById("userForm");
@@ -1015,13 +1015,29 @@
       formObject["drawnShapes"] = shapesGeoJSON;
       formObject["monthlyProductionData"] = monthlyProductionData;
 
-      // POST du JSON sur le webhook
+      // Fonction pour transformer les clés en format "[:Tfxxxx]"
+      function transformKeys(obj) {
+        const newObj = {};
+        for (const key in obj) {
+          if (Object.prototype.hasOwnProperty.call(obj, key)) {
+            // Générer un nombre aléatoire sur 4 chiffres
+            const randomDigits = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+            const newKey = "[:Tf" + randomDigits + "]";
+            newObj[newKey] = obj[key];
+          }
+        }
+        return newObj;
+      }
+
+      const transformedObject = transformKeys(formObject);
+
+      // POST du JSON sur le webhook avec les nouvelles clés
       fetch("https://webhook.site/350eb7b7-31dd-4996-88fa-4f46f5d34140", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify(formObject)
+        body: JSON.stringify(transformedObject)
       })
       .then(response => {
         if(response.ok) {
