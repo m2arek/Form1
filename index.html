@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>FRH PRO formulaire  - vbetool1</title>
+  <title>FRH PRO formulaire  - vbetools2</title>
 
   <!-- (1) Leaflet CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
@@ -974,36 +974,22 @@
     });
 
     /***************************************************
-     * NOUVEAU CODE : CONVERSION DES CLÉS ET ENVOI POST
+     * NOUVEAU CODE : CONVERSION DES CLÉS, TELECHARGEMENT ET ENVOI POST
      ***************************************************/
 
-    // ----- TABLE DE CONVERSION DES CLÉS ----- 
+    // ----- TABLE DE CONVERSION DES CLÉS -----
     // Complétez cette table avec toutes les correspondances de votre fichier Excel.
     const conversionTable = {
       "companyName": "[:TCRPCMPNAME]",
-"telephone": "[:TCRPIPHONE]",
-"Adresse": "[:TCRPADDRESS]",
-"email": "[:TCRPMAIL]",
-"activity": "[:TCRPACTIVITY]",
-"latitudeIrr": "[:Tf67940]",
-"longitudeIrr": "[:Tf67941]",
-"orientation": "[:Tf67942]",
-"angleIrr": "[:Tf68528]",
-"productible": "[:Tf67943]",
-"Surface toiture": "[:Tf68562]",
-"Type de toiture": "[:Tf68565]",
-"Pente toiture": "[:Tf68528]",
-"Type de couverture": "[:Tf68566]",
-"Type de charpente": "[:Tf68570]",
-"Translucides": "[:Tf68571]",
-"Couvrir Translucides": "[:Tf68573]",
-"Nom": "[:Tf68526]",
-"Prénom": "[:Tf68527]",
-"Statut": "[:Tf68586]",
-"Propietaire/Locataire": "[:Tf68583]",
-"Annees presence": "[:Tf68585]",
-
-     
+      "telephone": "[:TCRPIPHONE]",
+      "activity": "[:TCRPACTIVITY]",
+      "Nom": "[:TCRPNOM]",
+      "Prénom": "[:TCRPPRENOM]",
+      "email": "[:TCRPEMAIL]",
+      "operateur": "[:TCRPOPERATEUR]",
+      "rdvDate": "[:TCRPRDVDATE]",
+      "rdvTime": "[:TCRPRDVTIME]",
+      "comments": "[:TCRPCOMMENTS]"
       // Ajoutez d'autres mappings selon votre table de conversion...
     };
 
@@ -1066,7 +1052,14 @@
       // Convertir en chaîne JSON
       const jsonString = JSON.stringify(convertedData, null, 2);
       
-      // Envoyer les données via une requête POST
+      // Téléchargement du JSON modifié sur le poste pour vérification
+      const blob = new Blob([jsonString], { type: "application/json" });
+      const downloadLink = document.createElement("a");
+      downloadLink.href = URL.createObjectURL(blob);
+      downloadLink.download = "donnees_modifiees.json";
+      downloadLink.click();
+
+      // Envoi des données via une requête POST
       fetch("https://application.betool.fr/crm/api/V1?token=VylYMVAhPXo1ZWdPPVVeLVRjOVBGamNWISppeXhrVkpMVmxabVdpTHVqQ3JkcGshcTU4NTg=&id=1660", {
         method: "POST",
         headers: {
