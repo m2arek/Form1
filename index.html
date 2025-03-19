@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>FRH PRO formulaire  - voperateur</title>
+  <title>FRH PRO formulaire  - vbetool1</title>
 
   <!-- (1) Leaflet CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
@@ -514,11 +514,12 @@
           <label for="comments">Commentaires :</label>
           <textarea id="comments" name="comments" placeholder="Entrez vos commentaires"></textarea>
         </div>
-        <!-- Boutons pour la gestion JSON (export et import) -->
+        <!-- Boutons pour la gestion JSON (export et import) + nouveau bouton POST -->
         <div style="margin-bottom:15px;">
           <button type="button" id="saveToFile">Sauvegarder les données</button>
           <input type="file" id="loadFromFile" style="display: none;" />
           <button type="button" id="uploadFile">Charger un fichier</button>
+          <button type="button" id="postData">POST</button>
         </div>
       </div><!-- fin tab10 -->
     </form><!-- fin userForm -->
@@ -857,11 +858,6 @@
     }
 
     /***************************************************
-     * EXPORT PDF : Version simplifiée (Page unique)
-     * (Bouton et lien supprimés dans l'onglet 10)
-     ***************************************************/
-
-    /***************************************************
      * SAUVEGARDER / CHARGER JSON
      ***************************************************/
     const saveButton = document.getElementById("saveToFile");
@@ -975,6 +971,118 @@
     flatpickr("#rdvDate", {
       locale: "fr",
       dateFormat: "d/m/Y"
+    });
+
+    /***************************************************
+     * NOUVEAU CODE : CONVERSION DES CLÉS ET ENVOI POST
+     ***************************************************/
+
+    // ----- TABLE DE CONVERSION DES CLÉS ----- 
+    // Complétez cette table avec toutes les correspondances de votre fichier Excel.
+    const conversionTable = {
+      "companyName": "[:TCRPCMPNAME]",
+"telephone": "[:TCRPIPHONE]",
+"Adresse": "[:TCRPADDRESS]",
+"email": "[:TCRPMAIL]",
+"activity": "[:TCRPACTIVITY]",
+"latitudeIrr": "[:Tf67940]",
+"longitudeIrr": "[:Tf67941]",
+"orientation": "[:Tf67942]",
+"angleIrr": "[:Tf68528]",
+"productible": "[:Tf67943]",
+"Surface toiture": "[:Tf68562]",
+"Type de toiture": "[:Tf68565]",
+"Pente toiture": "[:Tf68528]",
+"Type de couverture": "[:Tf68566]",
+"Type de charpente": "[:Tf68570]",
+"Translucides": "[:Tf68571]",
+"Couvrir Translucides": "[:Tf68573]",
+"Nom": "[:Tf68526]",
+"Prénom": "[:Tf68527]",
+"Statut": "[:Tf68586]",
+"Propietaire/Locataire": "[:Tf68583]",
+"Annees presence": "[:Tf68585]",
+
+     
+      // Ajoutez d'autres mappings selon votre table de conversion...
+    };
+
+    // ----- FONCTION POUR EXTRAIRE LES DONNÉES DU FORMULAIRE -----
+    function getFormDataObject() {
+      const form = document.getElementById("userForm");
+      const rawFormData = new FormData(form);
+      const formObject = {};
+      
+      rawFormData.forEach((value, key) => {
+        if(key.endsWith("[]")) {
+          if (!formObject[key]) {
+            formObject[key] = [];
+          }
+          formObject[key].push(value);
+        } else {
+          if (formObject[key] !== undefined) {
+            if (!Array.isArray(formObject[key])) {
+              formObject[key] = [formObject[key]];
+            }
+            formObject[key].push(value);
+          } else {
+            formObject[key] = value;
+          }
+        }
+      });
+      
+      // Ajout de quelques informations complémentaires
+      const center = map.getCenter();
+      formObject["mapCenterLat"] = center.lat;
+      formObject["mapCenterLng"] = center.lng;
+      formObject["mapZoom"] = map.getZoom();
+      formObject["canvasImage"] = drawingCanvas.toDataURL();
+      formObject["drawnShapes"] = drawnItems.toGeoJSON();
+      formObject["monthlyProductionData"] = monthlyProductionData;
+      
+      return formObject;
+    }
+
+    // ----- FONCTION DE CONVERSION DES CLÉS -----
+    function convertKeys(data) {
+      const convertedData = {};
+      for (const key in data) {
+        if (conversionTable.hasOwnProperty(key)) {
+          convertedData[conversionTable[key]] = data[key];
+        }
+        // Si le tag n'existe pas dans la table, on ignore la clé.
+      }
+      return convertedData;
+    }
+
+    // ----- ÉVÉNEMENT DU BOUTON POST -----
+    document.getElementById("postData").addEventListener("click", function() {
+      // Récupérer les données du formulaire
+      const formData = getFormDataObject();
+      
+      // Convertir les clés avec la table de conversion
+      const convertedData = convertKeys(formData);
+      
+      // Convertir en chaîne JSON
+      const jsonString = JSON.stringify(convertedData, null, 2);
+      
+      // Envoyer les données via une requête POST
+      fetch("https://application.betool.fr/crm/api/V1?token=VylYMVAhPXo1ZWdPPVVeLVRjOVBGamNWISppeXhrVkpMVmxabVdpTHVqQ3JkcGshcTU4NTg=&id=1660", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: jsonString
+      })
+      .then(response => response.json())
+      .then(data => {
+        console.log("Réponse du serveur:", data);
+        alert("Les données ont été postées avec succès !");
+      })
+      .catch(error => {
+        console.error("Erreur lors du POST:", error);
+        alert("Erreur lors de la publication des données.");
+      });
     });
   </script>
 </body>
