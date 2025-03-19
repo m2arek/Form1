@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>FRH PRO formulaire  - v10</title>
+  <title>FRH PRO formulaire  - v8</title>
 
   <!-- (1) Leaflet CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
@@ -495,12 +496,6 @@
           <img src="https://raw.githubusercontent.com/m2arek/parallele/main/frh_pro_logo.png" alt="FRH Pro Logo"/>
           <h2>Commentaires</h2>
         </div>
-        <!-- Nouveau champ "Opérateur" ajouté au-dessus du bloc RDV -->
-        <div class="form-section">
-          <h3>Opérateur</h3>
-          <label for="operateur">Opérateur :</label>
-          <input type="text" id="operateur" name="operateur" placeholder="Entrez le nom de l'opérateur" />
-        </div>
         <div class="form-section">
           <h3>RDV</h3>
           <label for="rdvDate">Date du RDV :</label>
@@ -514,12 +509,11 @@
           <label for="comments">Commentaires :</label>
           <textarea id="comments" name="comments" placeholder="Entrez vos commentaires"></textarea>
         </div>
-        <!-- Boutons pour la gestion JSON (export, import et POST) -->
+        <!-- Boutons pour la gestion JSON (export et import) -->
         <div style="margin-bottom:15px;">
           <button type="button" id="saveToFile">Sauvegarder les données</button>
           <input type="file" id="loadFromFile" style="display: none;" />
           <button type="button" id="uploadFile">Charger un fichier</button>
-          <button type="button" id="postData">POST</button>
         </div>
       </div><!-- fin tab10 -->
     </form><!-- fin userForm -->
@@ -976,80 +970,6 @@
     flatpickr("#rdvDate", {
       locale: "fr",
       dateFormat: "d/m/Y"
-    });
-
-    /***************************************************
-     * POST JSON VERS LE WEBHOOK AVEC ENUMÉRATION DES CLÉS
-     ***************************************************/
-    document.getElementById("postData").addEventListener("click", () => {
-      const form = document.getElementById("userForm");
-      const rawFormData = new FormData(form);
-      const formObject = {};
-
-      rawFormData.forEach((value, key) => {
-        // Sauvegarder toujours sous forme de tableau pour les clés se terminant par "[]"
-        if(key.endsWith("[]")) {
-          if (!formObject[key]) {
-            formObject[key] = [];
-          }
-          formObject[key].push(value);
-        } else {
-          if (formObject[key] !== undefined) {
-            if (!Array.isArray(formObject[key])) {
-              formObject[key] = [formObject[key]];
-            }
-            formObject[key].push(value);
-          } else {
-            formObject[key] = value;
-          }
-        }
-      });
-
-      // Ajout des informations complémentaires (position de la carte, dessin, etc.)
-      const center = map.getCenter();
-      formObject["mapCenterLat"] = center.lat;
-      formObject["mapCenterLng"] = center.lng;
-      formObject["mapZoom"] = map.getZoom();
-      formObject["canvasImage"] = drawingCanvas.toDataURL();
-      const shapesGeoJSON = drawnItems.toGeoJSON();
-      formObject["drawnShapes"] = shapesGeoJSON;
-      formObject["monthlyProductionData"] = monthlyProductionData;
-
-      // Fonction pour transformer les clés en format "[:Tfxxxx]"
-      function transformKeys(obj) {
-        const newObj = {};
-        for (const key in obj) {
-          if (Object.prototype.hasOwnProperty.call(obj, key)) {
-            // Générer un nombre aléatoire sur 4 chiffres
-            const randomDigits = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-            const newKey = "[:Tf" + randomDigits + "]";
-            newObj[newKey] = obj[key];
-          }
-        }
-        return newObj;
-      }
-
-      const transformedObject = transformKeys(formObject);
-
-      // POST du JSON sur le webhook avec les nouvelles clés
-      fetch("https://webhook.site/350eb7b7-31dd-4996-88fa-4f46f5d34140", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(transformedObject)
-      })
-      .then(response => {
-        if(response.ok) {
-          alert("Données postées avec succès !");
-        } else {
-          alert("Erreur lors du POST des données.");
-        }
-      })
-      .catch(error => {
-        console.error("Erreur POST:", error);
-        alert("Erreur lors du POST des données.");
-      });
     });
   </script>
 </body>
